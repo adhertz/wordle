@@ -127,23 +127,30 @@ export function maxEntropyWord(board: GameBoard, guess: string){
     let greys = 0;
 
     for (let row = 0; row < board.words.length; ++row){
-        let word = board.words[row]
+        let word = board.words[row];
+        let wordGreys = 0;
         for (let col = 0; col < word.length; ++col){
-            const state = board.state[row][col]
-            const char = asCharCode(board.words[row][col])
-            const oneHot = asHotSet(board.words[row][col])
+            const state = board.state[row][col];
+            const oneHot = asHotSet(board.words[row][col]);
 	    if (state === "⬛") {
-                greys |= oneHot;
+                wordGreys |= oneHot;
             }
-	    else if (state === "🟩") {
+        }
+        for (let col = 0; col < word.length; ++col){
+            const state = board.state[row][col];
+            const oneHot = asHotSet(board.words[row][col]);
+	    if (state === "🟩") {
                 greens[col] = oneHot;
+                wordGreys &= ~oneHot;
 	    }
 	    else if (state === "🟨"){
                 yellows[col] |= oneHot;
+                wordGreys &= ~oneHot;
             }
             else { // empty
             }
         }
+        greys |= wordGreys;
     }
 
     let possMatches = getMatches(greys, greens,
@@ -212,7 +219,7 @@ export function conditionalObs(greys: number,
     let greys_ = greys | (guessSet ^ (guessSet & goalSet));
     let greens_ = [...greens];
     for (let i=0; i<greens.length; ++i){
-        greens_[i] |= (guessHot[i] == goalHot[i]);
+        greens_[i] |= (guessHot[i] & goalHot[i]);
     }
     let yellows_  = [...yellows];
     for (let i=0; i<yellows_.length; ++i){
