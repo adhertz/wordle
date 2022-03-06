@@ -5,29 +5,27 @@
 	export let y = 0;
 	export let word = "";
 	export let pAns: number;
-	export let pSols: number;
 	const width = parseInt(getComputedStyle(document.body).getPropertyValue("--game-width")) / 2;
 
 	$: x = window.innerWidth - x < width ? window.innerWidth - width : x;
 </script>
 
 <div class="ctx-menu" style="top: {y}px; left: {x}px;">
+  <div>
+  Bye
+  </div>
 	{#if word !== ""}
 		<div>
-			Considering all hints, this row had:
+			CONSIDIDERING all hints, this row had:
 			<br /><br />
 			{pAns} possible answers
-			<br />
-			{pSols} valid guesses
 		</div>
 		<Definition {word} alternates={1} />
 	{:else}
 		<div>
-			Considering all hints, there are:
+			CONSIDERING all hints, there are:
 			<br /><br />
 			{pAns} possible answers
-			<br />
-			{pSols} valid guesses
 		</div>
 	{/if}
 </div>

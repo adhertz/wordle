@@ -30,9 +30,14 @@
 		createNewGame,
 		seededRandomInt,
 		createLetterStates,
-		words,
+   	        words,
+                maxEntropyWord,
 	} from "../utils";
-	import { letterStates, settings, mode } from "../stores";
+        import {
+          letterStates,
+          settings,
+          mode,
+        } from "../stores";
 
 	export let word: string;
 	export let stats: Stats;
@@ -80,6 +85,9 @@
 					game.validHard = false;
 				}
 			}
+                        let evilWord = maxEntropyWord(game.board, game.board.words[game.guesses]);
+                        word = evilWord;
+                        console.log("got evil word: " + evilWord);
 			const state = getState(word, game.board.words[game.guesses]);
 			game.board.state[game.guesses] = state;
 			state.forEach((e, i) => {

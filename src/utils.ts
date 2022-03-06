@@ -12,6 +12,40 @@ export const words = {
 	},
 };
 
+export function asCharCode(char: string){
+    return char.charCodeAt(0) - "a".charCodeAt(0);
+}
+
+export function asHotSet(str: string){
+    let set = 0;
+    for (let i=0; i<str.length; ++i){
+        const c = 2 ** asCharCode(str[i]);
+        set = set | c;
+    }
+    return set;
+}
+
+export function asHots(str: string){
+    let set = [];
+    for (let i=0; i<str.length; ++i){
+        const c = 2 ** asCharCode(str[i]);
+        set.push(c);
+    }
+    return set;
+}
+
+export function hotSetAsStr(hotSet: number){
+    let aCode = "a".charCodeAt(0);
+    let codes = [];
+    for (let i=0; i<26; ++i){
+        if (hotSet % 2 == 1){
+            codes.push(i+aCode);
+        }
+        hotSet = hotSet >>> 1;
+    }
+    return String.fromCharCode(...codes);
+}
+
 export function checkHardMode(board: GameBoard, row: number): HardModeData {
 	for (let i = 0; i < COLS; ++i) {
 		if (board.state[row - 1][i] === "🟩" && board.words[row - 1][i] !== board.words[row][i]) {
@@ -81,6 +115,153 @@ class WordData {
 	lettersNotAt(pos: number) {
 		return new Set([...this.notSet, ...this.word[pos].notSet]);
 	}
+}
+
+export function maxEntropyWord(board: GameBoard, guess: string){
+    let yellows = [];
+    for (let i=0; i<COLS; ++i){
+        yellows.push(0);
+    }
+
+    let greens = [...yellows];
+    let greys = 0;
+
+    for (let row = 0; row < board.words.length; ++row){
+        let word = board.words[row]
+        for (let col = 0; col < word.length; ++col){
+            const state = board.state[row][col]
+            const char = asCharCode(board.words[row][col])
+            const oneHot = asHotSet(board.words[row][col])
+	    if (state === "⬛") {
+                greys |= oneHot;
+            }
+	    else if (state === "🟩") {
+                greens[col] = oneHot;
+	    }
+	    else if (state === "🟨"){
+                yellows[col] |= oneHot;
+            }
+            else { // empty
+            }
+        }
+    }
+
+    let possMatches = getMatches(greys, greens,
+                                 yellows, words.words);
+
+    if (possMatches.length == 1){
+        return possMatches[0];
+    }
+    const traceSet = asHotSet(guess);
+    const traceHot = asHots(guess);
+
+    const wordSets = words.words.map(asHotSet);
+    const wordHots = words.words.map(asHots);
+    let conditionals = [];
+    for (let i=0; i<wordSets.length; ++i){
+        conditionals.push(conditionalObs(greys, greens, yellows,
+                                         traceSet, traceHot,
+                                         wordSets[i], wordHots[i]));
+    }
+    let condEntropies = conditionals.map((c) => getMatches(...c,possMatches).length);
+    let maxEntropy = Math.max(...condEntropies);
+    let argmax = condEntropies.findIndex((val) => val == maxEntropy);
+
+    return possMatches[argmax]
+}
+
+export function maxEntropy(board: GameBoard){
+    let yellows = [];
+    for (let i=0; i<COLS; ++i){
+        yellows.push(0);
+    }
+
+    let greens = [...yellows];
+    let greys = 0;
+
+    for (let row = 0; row < board.words.length; ++row){
+        let word = board.words[row]
+        for (let col = 0; col < word.length; ++col){
+            const state = board.state[row][col]
+            const char = asCharCode(board.words[row][col])
+            const oneHot = asHotSet(board.words[row][col])
+	    if (state === "⬛") {
+                greys |= oneHot;
+            }
+	    else if (state === "🟩") {
+                greens[col] = oneHot;
+	    }
+	    else if (state === "🟨"){
+                yellows[col] |= oneHot;
+            }
+            else { // empty
+            }
+        }
+    }
+
+    let possMatches = getMatches(greys, greens,
+                                 yellows, words.words);
+    return possMatches.length;
+}
+
+export function conditionalObs(greys: number,
+                               greens: number[],
+                               yellows: number[],
+                               guessSet: number,
+                               guessHot: number[],
+                               goalSet: number,
+                               goalHot: number[],
+                              ){
+    let greys_ = greys | (guessSet ^ (guessSet & goalSet));
+    let greens_ = [...greens];
+    for (let i=0; i<greens.length; ++i){
+        greens_[i] |= (guessHot[i] == goalHot[i]);
+    }
+    let yellows_  = [...yellows];
+    for (let i=0; i<yellows_.length; ++i){
+        yellows_[i] |= (goalSet ^ goalHot[i]) & guessHot[i];
+    }
+    return [greys_, greens_, yellows_];
+}
+
+export function isMatch(greys: number,
+                        greens: number[],
+                        yellows: number[],
+                        word: string){
+    const wordHot = asHotSet(word);
+    const wordHots = word.split("").map(asHotSet);
+    let yellowSet = 0;
+    for (let i=0; i<yellows.length; ++i){
+        yellowSet |= yellows[i];
+    }
+    // does any grey appear in the word?
+    if ((wordHot & greys) != 0){
+        return false;
+    }
+    // does the word have all yellows?
+    if ((wordHot & yellowSet) != yellowSet){
+        return false;
+    }
+    // word letters matching yellow?
+    for (let i=0; i<yellows.length; ++i){
+        if ((yellows[i] & wordHots[i]) > 0){
+            return false;
+        }
+    }
+    // do all greens match?
+    for (let i=0; i<greens.length; ++i){
+        if ((greens[i] & wordHots[i]) != greens[i]){
+            return false;
+        }
+    }
+    return true;
+}
+
+export function getMatches(greys: number,
+                           greens: number[],
+                           yellows: number[],
+                           words: string[]){
+    return words.filter(w => isMatch(greys, greens, yellows, w));
 }
 
 export function getRowData(n: number, board: GameBoard) {
