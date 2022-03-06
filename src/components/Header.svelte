@@ -46,7 +46,7 @@
 			toaster.pop(modeData.modes[$mode].name);
 		}}
 	>
-		wordle evil
+		evil wordle
 	</h1>
 	<div class="icons">
 		{#if showStats}
