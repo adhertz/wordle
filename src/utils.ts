@@ -149,16 +149,13 @@ export function maxEntropyWord(board: GameBoard, guess: string){
     let possMatches = getMatches(greys, greens,
                                  yellows, words.words);
 
-    if (possMatches.length == 1){
-        return possMatches[0];
-    }
     const traceSet = asHotSet(guess);
     const traceHot = asHots(guess);
 
-    const wordSets = words.words.map(asHotSet);
-    const wordHots = words.words.map(asHots);
+    const wordSets = possMatches.map(asHotSet);
+    const wordHots = possMatches.map(asHots);
     let conditionals = [];
-    for (let i=0; i<wordSets.length; ++i){
+    for (let i=0; i<possMatches.length; ++i){
         conditionals.push(conditionalObs(greys, greens, yellows,
                                          traceSet, traceHot,
                                          wordSets[i], wordHots[i]));
