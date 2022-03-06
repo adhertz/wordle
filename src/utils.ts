@@ -128,6 +128,7 @@ export function maxEntropyWord(board: GameBoard, guess: string){
     }
 
     let greens = [...yellows];
+    let colGreys = [...yellows];
     let greys = 0;
 
     for (let row = 0; row < board.words.length; ++row){
@@ -138,6 +139,7 @@ export function maxEntropyWord(board: GameBoard, guess: string){
             const oneHot = asHotSet(board.words[row][col]);
 	    if (state === "⬛") {
                 wordGreys |= oneHot;
+                colGreys[col] |= oneHot;
             }
         }
         for (let col = 0; col < word.length; ++col){
@@ -157,7 +159,7 @@ export function maxEntropyWord(board: GameBoard, guess: string){
         greys |= wordGreys;
     }
 
-    let possMatches = getMatches(greys, greens,
+    let possMatches = getMatches(greys, colGreys, greens,
                                  yellows, words.words);
 
     const traceSet = asHotSet(guess);
@@ -167,7 +169,7 @@ export function maxEntropyWord(board: GameBoard, guess: string){
     const wordHots = possMatches.map(asHots);
     let conditionals = [];
     for (let i=0; i<possMatches.length; ++i){
-        conditionals.push(conditionalObs(greys, greens, yellows,
+        conditionals.push(conditionalObs(greys, colGreys, greens, yellows,
                                          traceSet, traceHot,
                                          wordSets[i], wordHots[i]));
     }
@@ -180,13 +182,13 @@ export function maxEntropyWord(board: GameBoard, guess: string){
 
 export function scoreObsGuess(guess: string,
                               greys: number,
+                              colGreys: number[],
                               greens: number[],
                               yellows: number[],
                               words: string[]){
 
     const matchCounts = words.filter((w) => w != guess &&
-        isMatch(greys, greens,
-                yellows, w));
+        isMatch(greys, colGreys, greens, yellows, w));
     return matchCounts.length;
 }
 
@@ -225,6 +227,7 @@ export function maxEntropy(board: GameBoard){
 }
 
 export function conditionalObs(greys: number,
+                               colGreys: number[],
                                greens: number[],
                                yellows: number[],
                                guessSet: number,
@@ -241,10 +244,11 @@ export function conditionalObs(greys: number,
     for (let i=0; i<yellows_.length; ++i){
         yellows_[i] |= (goalSet ^ goalHot[i]) & guessHot[i];
     }
-    return [greys_, greens_, yellows_];
+    return [greys_, colGreys, greens_, yellows_];
 }
 
 export function isMatch(greys: number,
+                        colGreys: number[],
                         greens: number[],
                         yellows: number[],
                         word: string){
@@ -258,6 +262,14 @@ export function isMatch(greys: number,
     if ((wordHot & greys) != 0){
         return false;
     }
+
+    // any word letters in grey position?
+    for (let i=0; i<colGreys.length; ++i){
+        if ((colGreys[i] & wordHots[i]) > 0){
+            return false;
+        }
+    }
+
     // does the word have all yellows?
     if ((wordHot & yellowSet) != yellowSet){
         return false;
@@ -278,10 +290,11 @@ export function isMatch(greys: number,
 }
 
 export function getMatches(greys: number,
+                           colGreys: number[],
                            greens: number[],
                            yellows: number[],
                            words: string[]){
-    return words.filter(w => isMatch(greys, greens, yellows, w));
+    return words.filter(w => isMatch(greys, colGreys, greens, yellows, w));
 }
 
 export function getRowData(n: number, board: GameBoard) {
