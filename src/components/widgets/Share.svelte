@@ -23,7 +23,7 @@
 	}/${state.board.words.length}\n\n    ${state.board.state
 		.slice(0, state.guesses)
 		.map((r) => r.join(""))
-		.join("\n    ")}\nmikhad.github.io/wordle`;
+		.join("\n    ")}\nadhertz.github.io/`;
 </script>
 
 <div
