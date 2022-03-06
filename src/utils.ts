@@ -117,6 +117,10 @@ class WordData {
 	}
 }
 
+export function charCodeCheck(text: string){
+    return text.codePointAt(0);
+}
+
 export function maxEntropyWord(board: GameBoard, guess: string){
     let yellows = [];
     for (let i=0; i<COLS; ++i){
@@ -167,11 +171,23 @@ export function maxEntropyWord(board: GameBoard, guess: string){
                                          traceSet, traceHot,
                                          wordSets[i], wordHots[i]));
     }
-    let condEntropies = conditionals.map((c) => getMatches(...c,possMatches).length);
+    let condEntropies = conditionals.map((c) => scoreObsGuess(guess,...c,possMatches));
     let maxEntropy = Math.max(...condEntropies);
     let argmax = condEntropies.findIndex((val) => val == maxEntropy);
 
     return possMatches[argmax]
+}
+
+export function scoreObsGuess(guess: string,
+                              greys: number,
+                              greens: number[],
+                              yellows: number[],
+                              words: string[]){
+
+    const matchCounts = words.filter((w) => w != guess &&
+        isMatch(greys, greens,
+                yellows, w));
+    return matchCounts.length;
 }
 
 export function maxEntropy(board: GameBoard){
